@@ -23,7 +23,7 @@
         die("Connection failed: " . $conn->connect_error);
     }
 
-    $sql = "CREATE TABLE IF NOT EXISTS $tablename (name VARCHAR(300) NOT NULL PRIMARY KEY, file_type VARCHAR(30) NOT NULL, created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);";
+    $sql = "CREATE TABLE IF NOT EXISTS $tablename (name VARCHAR(300) NOT NULL PRIMARY KEY, file_type VARCHAR(30) NOT NULL, special TINYINT(1) NOT NULL DEFAULT 0, created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);";
     echo "$sql\n";
     if ($conn->query($sql) === FALSE) {
         echo "Error: $sql \n $conn->error \n";
@@ -31,10 +31,16 @@
 
     foreach (glob("$directory*") as $filename) {
         $file = trim(end(explode('/', $filename)));
-        $name = trim(explode('.', $file)[0]);
-        $file_type = trim(end(explode('.', $file)));
+        $dotPos = strrpos($file, '.');
+        if ($dotPos !== false) {
+            $name = substr($file, 0, $dotPos);
+            $file_type = substr($file, $dotPos + 1);
+        } else {
+            $name = $file;
+            $file_type = '';
+        }
         $created = filemtime($filename);
-        $sql = "INSERT INTO files (name, file_type, created) VALUES ('$name', '$file_type', FROM_UNIXTIME('$created')) ON DUPLICATE KEY UPDATE name=name";
+        $sql = "INSERT INTO files (name, file_type, special, created) VALUES ('$name', '$file_type', 0, FROM_UNIXTIME('$created')) ON DUPLICATE KEY UPDATE name=name";
         echo "$sql\n";
 
         if ($conn->query($sql) === FALSE) {
